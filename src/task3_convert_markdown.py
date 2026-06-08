@@ -14,12 +14,25 @@ Hướng dẫn:
 """
 
 import json
+import sys
 from pathlib import Path
+
+# Thêm thư mục gốc của dự án vào sys.path để chạy trực tiếp không bị lỗi import
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+# Đảm bảo stdout hỗ trợ UTF-8 trên Windows console
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
 
 from markitdown import MarkItDown
 
-LANDING_DIR = Path(__file__).parent.parent / "data" / "landing"
-OUTPUT_DIR = Path(__file__).parent.parent / "data" / "standardized"
+LANDING_DIR = ROOT_DIR / "data" / "landing"
+OUTPUT_DIR = ROOT_DIR / "data" / "standardized"
 
 
 def convert_legal_docs():
@@ -33,12 +46,13 @@ def convert_legal_docs():
     for filepath in legal_dir.iterdir():
         if filepath.suffix.lower() in (".pdf", ".docx", ".doc"):
             print(f"Converting: {filepath.name}")
-            # TODO: Convert và lưu file
-            # result = md.convert(str(filepath))
-            # output_path = output_dir / f"{filepath.stem}.md"
-            # output_path.write_text(result.text_content, encoding="utf-8")
-            # print(f"  ✓ Saved: {output_path}")
-            raise NotImplementedError("Implement convert_legal_docs")
+            try:
+                result = md.convert(str(filepath))
+                output_path = output_dir / f"{filepath.stem}.md"
+                output_path.write_text(result.text_content, encoding="utf-8")
+                print(f"  ✓ Saved: {output_path}")
+            except Exception as e:
+                print(f"  ✗ Error converting {filepath.name}: {e}")
 
 
 def convert_news_articles():
@@ -50,19 +64,20 @@ def convert_news_articles():
     for filepath in news_dir.iterdir():
         if filepath.suffix.lower() == ".json":
             print(f"Converting: {filepath.name}")
-            # TODO: Đọc JSON, extract content_markdown, lưu thành .md
-            # data = json.loads(filepath.read_text(encoding="utf-8"))
-            # output_path = output_dir / f"{filepath.stem}.md"
-            #
-            # # Thêm metadata header
-            # header = f"# {data.get('title', 'Unknown')}\n\n"
-            # header += f"**Source:** {data.get('url', 'N/A')}\n"
-            # header += f"**Crawled:** {data.get('date_crawled', 'N/A')}\n\n---\n\n"
-            #
-            # content = header + data.get("content_markdown", "")
-            # output_path.write_text(content, encoding="utf-8")
-            # print(f"  ✓ Saved: {output_path}")
-            raise NotImplementedError("Implement convert_news_articles")
+            try:
+                data = json.loads(filepath.read_text(encoding="utf-8"))
+                output_path = output_dir / f"{filepath.stem}.md"
+
+                # Thêm metadata header
+                header = f"# {data.get('title', 'Unknown')}\n\n"
+                header += f"**Source:** {data.get('url', 'N/A')}\n"
+                header += f"**Crawled:** {data.get('date_crawled', 'N/A')}\n\n---\n\n"
+
+                content = header + data.get("content_markdown", "")
+                output_path.write_text(content, encoding="utf-8")
+                print(f"  ✓ Saved: {output_path}")
+            except Exception as e:
+                print(f"  ✗ Error converting {filepath.name}: {e}")
 
 
 def convert_all():
